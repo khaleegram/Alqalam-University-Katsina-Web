@@ -1,0 +1,60 @@
+document.addEventListener('DOMContentLoaded', () => {
+    // Populate Colleges on Page Load
+    populateColleges();
+
+    // Add Event Listener to All College Dropdowns for Department Fetching
+    document.body.addEventListener('change', (event) => {
+        if (event.target.matches('#college_id')) {
+            const selectedCollegeId = event.target.value;
+
+            // Find the associated department dropdown
+            const departmentDropdown = event.target.closest('form').querySelector('#department_id');
+
+            if (selectedCollegeId) {
+                fetchDepartments(selectedCollegeId, departmentDropdown);
+            } else {
+                departmentDropdown.innerHTML = '<option value="">Select Department</option>';
+            }
+        }
+    });
+});
+
+// Function to Populate Colleges in All Forms
+function populateColleges() {
+    fetch('backend/colleges.php') // Adjust endpoint to your backend route
+        .then(response => response.json())
+        .then(data => {
+            const collegeSelectElements = document.querySelectorAll('#college_id');
+
+            collegeSelectElements.forEach(collegeSelect => {
+                collegeSelect.innerHTML = '<option value="">Select College</option>'; // Default option
+                data.forEach(college => {
+                    const option = document.createElement('option');
+                    option.value = college.id;
+                    option.textContent = college.name;
+                    collegeSelect.appendChild(option);
+                });
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching colleges:', error);
+        });
+}
+
+// Function to Fetch Departments Based on Selected College
+function fetchDepartments(collegeId, departmentDropdown) {
+    fetch(`backend/departments.php?college_id=${collegeId}`) // Adjust endpoint to your backend route
+        .then(response => response.json())
+        .then(data => {
+            departmentDropdown.innerHTML = '<option value="">Select Department</option>'; // Default option
+            data.forEach(department => {
+                const option = document.createElement('option');
+                option.value = department.id;
+                option.textContent = department.name;
+                departmentDropdown.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching departments:', error);
+        });
+}

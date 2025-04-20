@@ -1,0 +1,85 @@
+/* styles.css */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #EAD9C6; /* Slightly darker sand color */
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.login-container {
+    width: 100%;
+    max-width: 400px;
+    margin: auto;
+}
+
+.login-box {
+    background-color: #800000; /* Maroon color */
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    text-align: center;
+}
+
+.login-box h1 {
+    margin-bottom: 20px;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+label {
+    text-align: left;
+    font-weight: bold;
+    color: #EAD9C6; /* Sand color for labels */
+    width: 90%;
+}
+
+input, select {
+    padding: 10px;
+    border: 1px solid #EAD9C6;
+    border-radius: 5px;
+    font-size: 14px;
+    width: 90%;
+}
+
+button {
+    background-color: #D6C7B3; /* Slightly darker sand */
+    color: #800000; /* Maroon color */
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    width: 50%;
+    text-align: center;
+}
+
+button:hover {
+    background-color: #B8A086; /* More darker sand for hover */
+}
+
+.extras {
+    margin-top: 20px;
+}
+
+.extras a {
+    color: #EAD9C6; /* Sand color for links */
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.extras a:hover {
+    color: #FFD700; /* Gold color for hover effect */
+}

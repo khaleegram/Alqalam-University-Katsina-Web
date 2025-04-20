@@ -1,0 +1,18 @@
+.data-creation-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  
+  .data-creation-content {
+    display: flex;
+    height: calc(100vh - 60px);
+  }
+  
+  .data-creation-main {
+    flex: 1;
+    padding: 30px;
+    background-color: #1a202c;
+    color: #e2e8f0;
+  }
+  

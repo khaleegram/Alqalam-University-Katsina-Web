@@ -1,0 +1,45 @@
+/* src/styles/global.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* You can also add custom global styles here */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: white;  /* Google-style white background */
+  color: #202124;  /* Dark gray text color for better contrast */
+}
+
+/* Maroon themed accent color */
+:root {
+  --primary-color: #800000;  /* Maroon */
+  --secondary-color: sandybrown;
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --blur: blur(10px);
+}
+
+/* Optional: You can add maroon accent to other elements like buttons, links, etc. */
+a {
+  color: var(--primary-color);
+}
+
+button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+button:hover {
+  background-color: darken(var(--primary-color), 10%);
+}

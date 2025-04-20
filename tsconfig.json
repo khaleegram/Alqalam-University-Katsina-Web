@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./",  // Ensure this is included to resolve relative paths
+    "paths": {
+      "@shadcn/*": ["node_modules/shadcn/*"]
+    }
+  },
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}

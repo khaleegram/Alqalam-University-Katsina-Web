@@ -1,0 +1,23 @@
+{
+    "name": "Al-Qalam Timetable Generator",
+    "short_name": "ATG",
+    "description": "A progressive web app for the Al-Qalam Timetable Generator.",
+    "start_url": ".",
+    "background_color": "#ffffff",
+    "theme_color": "#1a202c",
+    "display": "standalone",
+    "icons": [
+      {
+        
+          "src": "assets/avater.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        },
+        {
+          "src": "assets/avater.png",
+          "sizes": "512x512",
+          "type": "image/png"
+        }
+    ]
+  }
+  

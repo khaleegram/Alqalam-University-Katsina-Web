@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up</title>
+    <link rel="stylesheet" href="signup.css">
+    <script defer src="signup.js"></script>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <h1>Sign Up</h1>
+            <form action="process_signup.php" method="POST" id="signUpForm">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                
+                <label for="role">Role:</label>
+                <select id="role" name="role" required>
+                    <option value="">Select Role</option>
+                    <option value="super-admin">Admin</option>
+                    <option value="admin">HOD'S</option>
+                </select>
+
+                <div id="accessCodeContainer" style="display: none;">
+                    <label for="accessCode">Access Code:</label>
+                    <input type="text" id="accessCode" name="accessCode" placeholder="Enter Access Code">
+                </div>
+
+                <button type="submit">Sign Up</button>
+            </form>
+            <div class="extras">
+                <p>Already have an account? <a href="login.html">Sign In</a></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

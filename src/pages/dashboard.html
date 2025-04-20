@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <script defer src="../backend/dashboard.js"></script>
+    <div id="alertBox" class="alert" style="display: none;"></div>
+
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="logo">Super Admin</div>
+        <ul class="nav-links">
+            <li><a href="#dashboard" class="active">Dashboard</a></li>
+            <li><a href="#manageUsers">Manage Users</a></li>
+            <li><a href="#timetable">Timetable</a></li>
+            <li><a href="#dataCreation">Data Creation</a></li>
+            <li><a href="logout.php">Logout</a></li>
+        </ul>
+        <div class="menu-toggle" onclick="toggleMenu()">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="dashboard-container">
+        <div class="sidebar">
+            <h3>Super Admin Panel</h3>
+            <ul>
+                <li><a href="#dashboard">Dashboard Overview</a></li>
+                <li><a href="#manageUsers">Manage Users</a></li>
+                <li><a href="#timetable">Timetable</a></li>
+                <li><a href="#dataCreation">Data Creation</a></li>
+            </ul>
+        </div>
+        <div class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard">
+                <h2>Welcome, Super Admin!</h2>
+                <p>Here is an overview of the system’s performance and activities.</p>
+                <div class="stats">
+                    <div class="stat-box">
+                        <h3>Total Users</h3>
+                        <p id="totalUsers">--</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>Total Departments</h3>
+                        <p id="totalDepartments">--</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>Total Reports Generated</h3>
+                        <p id="totalReports">--</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Manage Users Section -->
+            <section id="manageUsers">
+                <h2>Manage Users</h2>
+                <p>Here you can view and manage all users.</p>
+                <!-- Add User Management Table -->
+                <div id="users_table"></div>
+            </section>
+
+            <!-- Timetable Section -->
+            <section id="timetable">
+                <h2>Create and Manage Timetables</h2>
+                <p>Use this section to create, view, and manage examination timetables.</p>
+
+                <!-- Create Timetable Form -->
+                <div class="timetable-form">
+                    <h3>Create a New Timetable</h3>
+                    <form onsubmit="generateTimetable(event)">
+                        <label for="semester">Semester:</label>
+                        <select name="semester" id="semester" required>
+                            <option value="first">First Semester</option>
+                            <option value="second">Second Semester</option>
+                        </select>
+
+                        <label for="session">Academic Session:</label>
+                        <input type="text" name="session" id="session" placeholder="e.g., 2024/2025" required>
+
+                        <label for="uploadData">Upload Course Data (Excel/CSV):</label>
+                        <input type="file" name="uploadData" id="uploadData" accept=".xlsx, .csv">
+
+                        <div class="default-option">
+                            <p>OR</p>
+                            <button type="button" onclick="useDefaultData()">Use Default Data</button>
+                        </div>
+
+                        <button type="submit" class="btn-primary">Generate Timetable</button>
+                    </form>
+                </div>
+
+                <!-- View Existing Timetables -->
+                <div class="view-timetable">
+                    <h3>View Existing Timetables</h3>
+                    <div id="timetables_table"></div>
+                </div>
+            </section>
+
+            <!-- Data Creation Section -->
+            <section id="dataCreation">
+                <h2>Data Creation</h2>
+                <p>Use this section to create and manage Colleges, Departments, Levels, Courses, Venues, Staff, and Combined Courses.</p>
+
+                <!-- Colleges Section -->
+                <div class="data-section">
+                    <h3>Manage Colleges</h3>
+                    <form onsubmit="addCollege(event)">
+                        <label for="college_name">College Name:</label>
+                        <input type="text" id="college_name" name="college_name" required>
+                        <button type="submit">Add College</button>
+                    </form>
+                    <h4>Existing Colleges</h4>
+                    <div id="colleges_table"></div>
+                </div>
+
+                <!-- Departments Section -->
+                <div class="data-section">
+                    <h3>Manage Departments</h3>
+                    <form onsubmit="addDepartment(event)">
+                        <label for="college_id">Select College:</label>
+                        <select id="college_id" name="college_id"></select>
+                        <label for="department_name">Department Name:</label>
+                        <input type="text" id="department_name" name="department_name" required>
+                        <button type="submit">Add Department</button>
+                    </form>
+                    <h4>Existing Departments</h4>
+                    <div id="departments_table"></div>
+                </div>
+
+                <!-- Levels Section -->
+                <div class="data-section">
+                    <h3>Manage Levels</h3>
+                    <form onsubmit="addLevel(event)">
+                        <label for="college_id_levels">Select College:</label>
+                        <select id="college_id_levels" name="college_id" onchange="fetchDepartments(this.value)"></select>
+                
+                        <label for="department_id">Select Department:</label>
+                        <select id="department_id" name="department_id"></select>
+                
+                        <label for="level_value">Level:</label>
+                        <input type="number" id="level_value" name="level" min="1" max="5" required>
+                
+                        <label for="students_count">Number of Students:</label>
+                        <input type="number" id="students_count" name="students_count" min="1" required>
+                
+                        <button type="submit">Add Level</button>
+                    </form>
+                
+                    <h4>Existing Levels</h4>
+                    <div id="levels_table"></div>
+                </div>
+                
+
+                <div class="data-section">
+                    <h3>Manage Courses</h3>
+                    <form onsubmit="addCourse(event)">
+                        <label for="college_id_course">Select College:</label>
+                        <select id="college_id_course" name="college_id" onchange="fetchDepartments(this.value)"></select>
+                    
+                        <label for="department_id_course">Select Department:</label>
+                        <select id="department_id_course" name="department_id" onchange="fetchLevels(this.value)"></select>
+                        
+                        <label for="level">Level:</label>
+                        <select id="level" name="level"></select>
+     
+                        <label for="students_count_display">Students Count:</label>
+                        <input type="text" id="students_count_display" readonly>
+
+
+                        <label for="course_code">Course Code:</label>
+                        <input type="text" id="course_code" name="course_code" required>
+                    
+                        <label for="course_name">Course Name:</label>
+                        <input type="text" id="course_name" name="course_name" required>
+                    
+                    
+                        <button type="submit">Add Course</button>
+                    </form>
+                    
+                    <h4>Existing Courses</h4>
+                    <div id="levels_courses_table"></div>
+                </div>
+
+                <!-- Combined Courses Section -->
+                <div class="data-section">
+                    <h3>Manage Combined Courses</h3>
+                    <form onsubmit="addCombinedCourse(event)">
+                        <label for="college_id_combined">Select College:</label>
+                        <select id="college_id_combined" name="college_id" onchange="fetchDepartments(this.value)"></select>
+
+                        <label for="department_id_combined_courses">Select Department:</label>
+                        <select id="department_id_combined_courses" name="department_id" onchange="fetchLevels(this.value)"></select>
+                        
+                        <label for="level_ccourse">Level:</label>
+                        <select id="level_ccourse" name="level"  onchange="fetchCourses(this.value)"></select>
+                        
+
+                        <label for="course">Select Course:</label>
+                        <select id="course"></select>
+
+                        <label for="departments_combined">Select Departments:</label>
+                        <select id="departments_combined" multiple></select>
+
+                        <label for="students_combined">Total Number of Students:</label>
+                        <label for="students_combined">Number of Students:</label>
+
+                        <button type="submit">Add Combined Course</button>
+                    </form>
+                    <h4>Existing Combined Courses</h4>
+                    <div id="departments_table"></div>
+                    <div id="combined_courses_table"></div>
+                </div>
+            </section>
+        </div>
+    </div>
+</body>
+</html>
