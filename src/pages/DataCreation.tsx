@@ -3,7 +3,7 @@ import { Route, Routes } from 'react-router-dom';
 import CollegesSection from '../sections/CollegesSection';
 import DepartmentsSection from '../sections/DepartmentsSection';
 import LevelsSection from '../sections/LevelSection';
-import ProgramsSection from '../sections/Programssection'; // New import for Programs
+import ProgramsSection from '../sections/ProgramsSection'; // New import for Programs
 import CoursesSection from '../sections/CoursesSection';
 import CombinedCoursesSection from '../sections/CombinedCoursesSection';
 import VenuesSection from '../sections/VenuesSection';
