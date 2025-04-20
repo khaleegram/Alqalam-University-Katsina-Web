@@ -8,6 +8,7 @@ interface Venue {
   capacity: number;
   latitude?: string;
   longitude?: string;
+  radius?: number;
 }
 
 interface ModalProps {
@@ -43,6 +44,7 @@ const VenuesSection: React.FC = () => {
   const [newCapacity, setNewCapacity] = useState('');
   const [newLatitude, setNewLatitude] = useState('');
   const [newLongitude, setNewLongitude] = useState('');
+  const [newRadius, setNewRadius] = useState('');
 
   // Edit form state
   const [editId, setEditId] = useState<number | null>(null);
@@ -51,6 +53,7 @@ const VenuesSection: React.FC = () => {
   const [editCapacity, setEditCapacity] = useState('');
   const [editLatitude, setEditLatitude] = useState('');
   const [editLongitude, setEditLongitude] = useState('');
+  const [editRadius, setEditRadius] = useState('');
 
   const baseUrl = 'http://192.168.21.83/ATG/backend/data_creation';
 
@@ -93,6 +96,7 @@ const VenuesSection: React.FC = () => {
         capacity: parseInt(newCapacity),
         latitude: newLatitude, // optional
         longitude: newLongitude, // optional
+        radius: newRadius ? parseInt(newRadius) : null, // optional
       });
       setMessage('Venue added successfully');
       setShowAddModal(false);
@@ -101,6 +105,7 @@ const VenuesSection: React.FC = () => {
       setNewCapacity('');
       setNewLatitude('');
       setNewLongitude('');
+      setNewRadius('');
       fetchVenues();
     } catch (err) {
       console.error(err);
@@ -120,6 +125,7 @@ const VenuesSection: React.FC = () => {
         capacity: parseInt(editCapacity),
         latitude: editLatitude,
         longitude: editLongitude,
+        radius: editRadius ? parseInt(editRadius) : null,
       });
       setMessage('Venue updated successfully');
       setShowEditModal(false);
@@ -150,6 +156,7 @@ const VenuesSection: React.FC = () => {
     setEditCapacity(venue.capacity.toString());
     setEditLatitude(venue.latitude || '');
     setEditLongitude(venue.longitude || '');
+    setEditRadius(venue.radius !== undefined ? venue.radius.toString() : '');
     setShowEditModal(true);
     setMessage('');
   };
@@ -201,6 +208,7 @@ const VenuesSection: React.FC = () => {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Hall Code</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Capacity</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Coordinates</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Radius</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
@@ -223,6 +231,7 @@ const VenuesSection: React.FC = () => {
                     </a>
                   ) : 'N/A'}
                 </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{venue.radius ? `${venue.radius}m` : 'N/A'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex gap-2">
                     <button
@@ -275,6 +284,7 @@ const VenuesSection: React.FC = () => {
                   </a>
                 ) : 'N/A'}
               </p>
+              <p className="text-sm">Radius: {venue.radius ? `${venue.radius}m` : 'N/A'}</p>
             </div>
             <div className="flex justify-end gap-2">
               <button
@@ -310,6 +320,7 @@ const VenuesSection: React.FC = () => {
             <InputField label="Capacity" type="number" value={newCapacity} setValue={setNewCapacity} />
             <InputField label="Latitude (optional)" value={newLatitude} setValue={setNewLatitude} />
             <InputField label="Longitude (optional)" value={newLongitude} setValue={setNewLongitude} />
+            <InputField label="Radius (in meters)" type="number" value={newRadius} setValue={setNewRadius} />
             <ModalActions onCancel={() => setShowAddModal(false)} submitLabel="Add" />
           </form>
         </Modal>
@@ -328,6 +339,7 @@ const VenuesSection: React.FC = () => {
             <InputField label="Capacity" type="number" value={editCapacity} setValue={setEditCapacity} />
             <InputField label="Latitude (optional)" value={editLatitude} setValue={setEditLatitude} />
             <InputField label="Longitude (optional)" value={editLongitude} setValue={setEditLongitude} />
+            <InputField label="Radius (in meters)" type="number" value={editRadius} setValue={setEditRadius} />
             <ModalActions onCancel={() => setShowEditModal(false)} submitLabel="Update" />
           </form>
         </Modal>

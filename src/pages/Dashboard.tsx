@@ -1,49 +1,44 @@
-import React from 'react';
-import StatCard from '../components/StatCard';
+import React, { useState } from 'react';
+import axios from 'axios';
 
-const Dashboard: React.FC = () => {
-  // Assuming you have a theme state for light/dark mode
-  const [theme] = React.useState<'light' | 'dark'>(
-    localStorage.getItem('theme') === 'dark' ? 'dark' : 'light'
-  );
+const AdminDashboard: React.FC = () => {
+    const [message, setMessage] = useState('');
+    const [loading, setLoading] = useState(false);
 
-  // Example data that could be fetched from an API or state
-  const stats = {
-    totalStudents: 1234,
-    activeLecturers: 87,
-    coursesRunning: 56,
-  };
+    const handleEndOfYearCleanup = async () => {
+        if (window.confirm('Are you sure you want to run the end-of-year cleanup? This action cannot be undone.')) {
+            setLoading(true);
+            setMessage('');
+            try {
+                // Replace '/api/end-of-year-cleanup' with the actual path to your backend endpoint
+                const response = await axios.post('/api/end-of-year-cleanup', {}, {
+                    auth: { // If using HTTP Basic Auth (replace with your actual auth method)
+                        username: 'admin',
+                        password: 'your_admin_password',
+                    },
+                });
+                setMessage(response.data.message); // Assuming the backend returns a message
+            } catch (error: any) {
+                setMessage(error.response?.data?.message || 'An error occurred during cleanup.');
+                console.error('End-of-year cleanup error:', error);
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
 
-  return (
-    <div className="flex flex-col h-screen">
-      <div className="flex flex-1 overflow-hidden">
-        <main
-          className={`flex-1 p-8 text-black overflow-y-auto ${
-            theme === 'light' ? 'bg-cream' : 'bg-gray-900'
-          }`} 
-        >
-          <h1 className="text-4xl font-bold mb-6">Welcome, Admin 👽</h1>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <StatCard 
-              title="Total Students" 
-              value={stats.totalStudents.toLocaleString()} 
-              theme={theme} 
-            />
-            <StatCard 
-              title="Active Lecturers" 
-              value={stats.activeLecturers} 
-              theme={theme} 
-            />
-            <StatCard 
-              title="Courses Running" 
-              value={stats.coursesRunning} 
-              theme={theme} 
-            />
-          </div>
-        </main>
-      </div>
-    </div>
-  );
+    return (
+        <div>
+            <h1>Admin Dashboard</h1>
+            {message && <p>{message}</p>}
+            <button
+                onClick={handleEndOfYearCleanup}
+                disabled={loading}
+            >
+                {loading ? 'Running Cleanup...' : 'Run End-of-Year Cleanup'}
+            </button>
+        </div>
+    );
 };
 
-export default Dashboard;
+export default AdminDashboard;
