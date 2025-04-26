@@ -110,7 +110,7 @@ const StaffsSection: React.FC = () => {
   const [editDepartmentId, setEditDepartmentId] = useState('');
   const [editStaffPosition, setEditStaffPosition] = useState('');
 
-  const baseUrl = 'http://192.168.21.83/ATG/backend/data_creation';
+  const baseUrl = 'http://192.168.94.83/ATG/backend/data_creation';
 
   useEffect(() => {
     fetchStaffs();

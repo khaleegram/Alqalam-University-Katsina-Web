@@ -24,6 +24,7 @@ interface Course {
   program_id?: number;
   program_name?: string;
   credit_unit?: number;
+  exam_type: 'CBT' | 'Written';
 }
 
 interface ModalProps {
@@ -54,7 +55,7 @@ interface SelectOptionProps {
 }
 
 const CoursesSection: React.FC = () => {
-  const baseUrl = 'http://192.168.21.83/ATG/backend/data_creation';
+  const baseUrl = 'http://192.168.94.83/ATG/backend/data_creation';
 
   // Table & filter state
   const [allCourses, setAllCourses] = useState<Course[]>([]);
@@ -79,6 +80,7 @@ const CoursesSection: React.FC = () => {
   const [newCourseCode, setNewCourseCode] = useState('');
   const [newCourseName, setNewCourseName] = useState('');
   const [newCreditUnit, setNewCreditUnit] = useState('');
+  const [newExamType, setNewExamType] = useState<'CBT' | 'Written'>('CBT');
   const [isAdding, setIsAdding] = useState(false);
 
   // Edit modal state
@@ -89,6 +91,7 @@ const CoursesSection: React.FC = () => {
   const [editCourseCode, setEditCourseCode] = useState('');
   const [editCourseName, setEditCourseName] = useState('');
   const [editCreditUnit, setEditCreditUnit] = useState('');
+  const [editExamType, setEditExamType] = useState<'CBT' | 'Written'>('CBT');
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Fetch routines
@@ -136,7 +139,6 @@ const CoursesSection: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // program filter autocomplete
     setFilteredPrograms(
       programSearch
         ? programs.filter(p => p.name.toLowerCase().includes(programSearch.toLowerCase()))
@@ -145,7 +147,6 @@ const CoursesSection: React.FC = () => {
   }, [programSearch, programs]);
 
   useEffect(() => {
-    // apply program/level filters
     let data = [...allCourses];
     if (selectedProgramFilter) {
       data = data.filter(c => c.program_id?.toString() === selectedProgramFilter);
@@ -157,7 +158,6 @@ const CoursesSection: React.FC = () => {
   }, [allCourses, selectedProgramFilter, selectedLevelFilter]);
 
   useEffect(() => {
-    // when program filter picks, load its levels
     if (selectedProgramFilter) {
       fetchLevels(parseInt(selectedProgramFilter), false);
       setSelectedLevelFilter('');
@@ -168,13 +168,28 @@ const CoursesSection: React.FC = () => {
   }, [selectedProgramFilter]);
 
   useEffect(() => {
-    // add-modal program autocomplete
     setNewFilteredPrograms(
       newProgramSearch
         ? programs.filter(p => p.name.toLowerCase().includes(newProgramSearch.toLowerCase()))
         : programs
     );
   }, [newProgramSearch, programs]);
+
+  // Auto-set exam type on level change for Add
+  useEffect(() => {
+    if (newLevelId) {
+      const lvl = newLevels.find(l => l.id.toString() === newLevelId);
+      setNewExamType(lvl?.level === 1 ? 'CBT' : 'Written');
+    }
+  }, [newLevelId, newLevels]);
+
+  // Auto-set exam type on level change for Edit
+  useEffect(() => {
+    if (editLevelId) {
+      const lvl = editLevels.find(l => l.id.toString() === editLevelId);
+      setEditExamType(lvl?.level === 1 ? 'CBT' : 'Written');
+    }
+  }, [editLevelId, editLevels]);
 
   // Handlers
   const resetMessage = () => setMessage('');
@@ -192,6 +207,7 @@ const CoursesSection: React.FC = () => {
         course_code: newCourseCode,
         course_name: newCourseName,
         credit_unit: parseInt(newCreditUnit),
+        exam_type: newExamType,
       });
       fetchAll();
       setShowAddModal(false);
@@ -216,6 +232,7 @@ const CoursesSection: React.FC = () => {
         course_code: editCourseCode,
         course_name: editCourseName,
         credit_unit: parseInt(editCreditUnit),
+        exam_type: editExamType,
       });
       fetchAll();
       setShowEditModal(false);
@@ -242,6 +259,7 @@ const CoursesSection: React.FC = () => {
     setEditCourseName(c.course_name);
     setEditCreditUnit(c.credit_unit?.toString() || '');
     setEditLevelId(c.level_id.toString());
+    setEditExamType(c.exam_type);
     if (c.program_id) fetchLevels(c.program_id, true);
     setShowEditModal(true);
     resetMessage();
@@ -319,6 +337,7 @@ const CoursesSection: React.FC = () => {
                     <th className="px-4 py-2">Code</th>
                     <th className="px-4 py-2">Name</th>
                     <th className="px-4 py-2">Level</th>
+                    <th className="px-4 py-2">Type</th>
                     <th className="px-4 py-2">Credit</th>
                     <th className="px-4 py-2">Actions</th>
                   </tr>
@@ -330,6 +349,7 @@ const CoursesSection: React.FC = () => {
                       <td className="px-4 py-2">{c.course_code}</td>
                       <td className="px-4 py-2">{c.course_name}</td>
                       <td className="px-4 py-2">{c.level ? `Level ${c.level}` : 'N/A'}</td>
+                      <td className="px-4 py-2">{c.exam_type}</td>
                       <td className="px-4 py-2">{c.credit_unit ?? 'N/A'}</td>
                       <td className="px-4 py-2 flex gap-2">
                         <button onClick={() => openEdit(c)} className="bg-blue-500 text-white px-2 py-1 rounded">
@@ -377,6 +397,18 @@ const CoursesSection: React.FC = () => {
               options={newLevels.map(l => ({ id: l.id, label: `Level ${l.level}` }))}
               placeholder="Select Level"
             />
+            <div>
+              <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Exam Type:</label>
+              <select
+                value={newExamType}
+                onChange={e => setNewExamType(e.target.value as 'CBT' | 'Written')}
+                required
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-maroon focus:border-maroon dark:bg-gray-700 dark:text-white"
+              >
+                <option value="CBT">CBT</option>
+                <option value="Written">Written</option>
+              </select>
+            </div>
             <InputField label="Course Name" value={newCourseName} setValue={setNewCourseName} />
             <InputField label="Course Code" value={newCourseCode} setValue={setNewCourseCode} />
             <InputField
@@ -399,6 +431,18 @@ const CoursesSection: React.FC = () => {
               options={editLevels.map(l => ({ id: l.id, label: `Level ${l.level}` }))}
               placeholder="Select Level"
             />
+            <div>
+              <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Exam Type:</label>
+              <select
+                value={editExamType}
+                onChange={e => setEditExamType(e.target.value as 'CBT' | 'Written')}
+                required
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-maroon focus:border-maroon dark:bg-gray-700 dark:text-white"
+              >
+                <option value="CBT">CBT</option>
+                <option value="Written">Written</option>
+              </select>
+            </div>
             <InputField label="Course Name" value={editCourseName} setValue={setEditCourseName} />
             <InputField label="Course Code" value={editCourseCode} setValue={setEditCourseCode} />
             <InputField

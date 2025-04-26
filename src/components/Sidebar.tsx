@@ -81,7 +81,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, onLinkClick }) => 
           </div>
           {isOpen && (
             <span className="text-xl text-white font-bold tracking-wide">
-              Al-Qalam University Katsina
+              AUK
             </span>
           )}
         </div>

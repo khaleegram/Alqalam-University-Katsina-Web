@@ -70,7 +70,7 @@ const ProgramsSection: React.FC = () => {
   const [editProgramName, setEditProgramName] = useState('');
   
   // Base URL for the PHP backend (adjust if needed).
-  const baseUrl = 'http://192.168.21.83/ATG/backend/data_creation';
+  const baseUrl = 'http://192.168.94.83/ATG/backend/data_creation';
 
   // On mount, fetch departments and then programs.
   useEffect(() => {

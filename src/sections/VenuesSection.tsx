@@ -9,6 +9,7 @@ interface Venue {
   latitude?: string;
   longitude?: string;
   radius?: number;
+  venue_type: 'CBT' | 'Written';
 }
 
 interface ModalProps {
@@ -45,6 +46,7 @@ const VenuesSection: React.FC = () => {
   const [newLatitude, setNewLatitude] = useState('');
   const [newLongitude, setNewLongitude] = useState('');
   const [newRadius, setNewRadius] = useState('');
+  const [newVenueType, setNewVenueType] = useState<'CBT' | 'Written'>('CBT');
 
   // Edit form state
   const [editId, setEditId] = useState<number | null>(null);
@@ -54,8 +56,9 @@ const VenuesSection: React.FC = () => {
   const [editLatitude, setEditLatitude] = useState('');
   const [editLongitude, setEditLongitude] = useState('');
   const [editRadius, setEditRadius] = useState('');
+  const [editVenueType, setEditVenueType] = useState<'CBT' | 'Written'>('CBT');
 
-  const baseUrl = 'http://192.168.21.83/ATG/backend/data_creation';
+  const baseUrl = 'http://192.168.94.83/ATG/backend/data_creation';
 
   useEffect(() => {
     fetchVenues();
@@ -63,7 +66,7 @@ const VenuesSection: React.FC = () => {
 
   const fetchVenues = async () => {
     try {
-      const res = await axios.get(`${baseUrl}/venues.php`);
+      const res = await axios.get<Venue[]>(`${baseUrl}/venues.php`);
       setVenues(res.data);
     } catch (err) {
       console.error('Error fetching venues:', err);
@@ -94,18 +97,21 @@ const VenuesSection: React.FC = () => {
         name: newVenueName,
         code: newHallCode,
         capacity: parseInt(newCapacity),
-        latitude: newLatitude, // optional
-        longitude: newLongitude, // optional
-        radius: newRadius ? parseInt(newRadius) : null, // optional
+        latitude: newLatitude || null,
+        longitude: newLongitude || null,
+        radius: newRadius ? parseInt(newRadius) : null,
+        venue_type: newVenueType,
       });
       setMessage('Venue added successfully');
       setShowAddModal(false);
+      // reset form
       setNewVenueName('');
       setNewHallCode('');
       setNewCapacity('');
       setNewLatitude('');
       setNewLongitude('');
       setNewRadius('');
+      setNewVenueType('CBT');
       fetchVenues();
     } catch (err) {
       console.error(err);
@@ -123,9 +129,10 @@ const VenuesSection: React.FC = () => {
         name: editVenueName,
         code: editHallCode,
         capacity: parseInt(editCapacity),
-        latitude: editLatitude,
-        longitude: editLongitude,
+        latitude: editLatitude || null,
+        longitude: editLongitude || null,
         radius: editRadius ? parseInt(editRadius) : null,
+        venue_type: editVenueType,
       });
       setMessage('Venue updated successfully');
       setShowEditModal(false);
@@ -157,6 +164,7 @@ const VenuesSection: React.FC = () => {
     setEditLatitude(venue.latitude || '');
     setEditLongitude(venue.longitude || '');
     setEditRadius(venue.radius !== undefined ? venue.radius.toString() : '');
+    setEditVenueType(venue.venue_type);
     setShowEditModal(true);
     setMessage('');
   };
@@ -207,6 +215,7 @@ const VenuesSection: React.FC = () => {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Hall Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Hall Code</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Capacity</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Type</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Coordinates</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Radius</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
@@ -219,6 +228,7 @@ const VenuesSection: React.FC = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{venue.name}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{venue.code}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{venue.capacity}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{venue.venue_type}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                   {(venue.latitude && venue.longitude) ? (
                     <a
@@ -252,7 +262,7 @@ const VenuesSection: React.FC = () => {
             ))}
             {filteredVenues.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">
                   No venues found
                 </td>
               </tr>
@@ -272,6 +282,7 @@ const VenuesSection: React.FC = () => {
               <h4 className="font-bold text-maroon">#{venue.id} - {venue.name}</h4>
               <p className="text-sm">Hall Code: {venue.code}</p>
               <p className="text-sm">Capacity: {venue.capacity}</p>
+              <p className="text-sm">Type: {venue.venue_type}</p>
               <p className="text-sm">
                 Coordinates: {(venue.latitude && venue.longitude) ? (
                   <a
@@ -320,6 +331,20 @@ const VenuesSection: React.FC = () => {
             <InputField label="Capacity" type="number" value={newCapacity} setValue={setNewCapacity} />
             <InputField label="Latitude (optional)" value={newLatitude} setValue={setNewLatitude} />
             <InputField label="Longitude (optional)" value={newLongitude} setValue={setNewLongitude} />
+            <div>
+              <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                Venue Type:
+              </label>
+              <select
+                value={newVenueType}
+                onChange={(e) => setNewVenueType(e.target.value as 'CBT' | 'Written')}
+                required
+                className="w-full p-2 rounded border border-maroon bg-cream dark:bg-gray-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-maroon"
+              >
+                <option value="CBT">CBT</option>
+                <option value="Written">Written</option>
+              </select>
+            </div>
             <InputField label="Radius (in meters)" type="number" value={newRadius} setValue={setNewRadius} />
             <ModalActions onCancel={() => setShowAddModal(false)} submitLabel="Add" />
           </form>
@@ -339,6 +364,20 @@ const VenuesSection: React.FC = () => {
             <InputField label="Capacity" type="number" value={editCapacity} setValue={setEditCapacity} />
             <InputField label="Latitude (optional)" value={editLatitude} setValue={setEditLatitude} />
             <InputField label="Longitude (optional)" value={editLongitude} setValue={setEditLongitude} />
+            <div>
+              <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                Venue Type:
+              </label>
+              <select
+                value={editVenueType}
+                onChange={(e) => setEditVenueType(e.target.value as 'CBT' | 'Written')}
+                required
+                className="w-full p-2 rounded border border-maroon bg-cream dark:bg-gray-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-maroon"
+              >
+                <option value="CBT">CBT</option>
+                <option value="Written">Written</option>
+              </select>
+            </div>
             <InputField label="Radius (in meters)" type="number" value={editRadius} setValue={setEditRadius} />
             <ModalActions onCancel={() => setShowEditModal(false)} submitLabel="Update" />
           </form>
@@ -365,7 +404,7 @@ const Modal: React.FC<ModalProps> = ({ title, onClose, children }) => (
   </div>
 );
 
-// Reusable Input Field Component with maroon border
+// Reusable Input Field Component
 const InputField: React.FC<InputFieldProps> = ({ label, value, setValue, type = "text" }) => (
   <div>
     <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">{label}:</label>

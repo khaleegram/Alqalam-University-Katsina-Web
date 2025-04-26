@@ -19,7 +19,7 @@ const AddCollege: React.FC = () => {
   const [editId, setEditId] = useState<number | null>(null);
   const [showModal, setShowModal] = useState(false);
 
-  const endpoint = 'http://192.168.21.83/ATG/backend/data_creation/colleges.php';
+  const endpoint = 'http://192.168.94.83/ATG/backend/data_creation/colleges.php';
 
   // Fetch colleges from backend.
   const fetchColleges = async () => {

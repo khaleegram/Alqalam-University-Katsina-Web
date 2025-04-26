@@ -62,7 +62,7 @@ const DepartmentsSection: React.FC = () => {
 
   const [editId, setEditId] = useState<number | null>(null);
 
-  const baseUrl = 'http://192.168.21.83/ATG/backend/data_creation';
+  const baseUrl = 'http://192.168.94.83/ATG/backend/data_creation';
 
   useEffect(() => {
     fetchDepartments();
