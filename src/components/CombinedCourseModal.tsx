@@ -116,7 +116,7 @@ interface CombinedCourseModalProps {
   onAdded?: (newCourse: CombinedCourse) => void;
 }
 const CombinedCourseModal: React.FC<CombinedCourseModalProps> = ({ onClose, onAdded }) => {
-  const baseUrl = 'http://192.168.94.83/ATG/backend/data_creation/combined_courses.php';
+  const baseUrl = 'http://192.168.1.104/ATG/backend/data_creation/combined_courses.php';
 
   // State hooks
   const [allCourses, setAllCourses] = useState<Course[]>([]);

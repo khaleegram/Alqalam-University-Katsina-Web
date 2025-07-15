@@ -55,7 +55,7 @@ interface SelectOptionProps {
 }
 
 const CoursesSection: React.FC = () => {
-  const baseUrl = 'http://192.168.94.83/ATG/backend/data_creation';
+  const baseUrl = 'http://192.168.1.104/ATG/backend/data_creation';
 
   // Table & filter state
   const [allCourses, setAllCourses] = useState<Course[]>([]);

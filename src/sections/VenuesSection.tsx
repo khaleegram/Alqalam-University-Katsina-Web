@@ -58,7 +58,7 @@ const VenuesSection: React.FC = () => {
   const [editRadius, setEditRadius] = useState('');
   const [editVenueType, setEditVenueType] = useState<'CBT' | 'Written'>('CBT');
 
-  const baseUrl = 'http://192.168.94.83/ATG/backend/data_creation';
+  const baseUrl = 'http://192.168.1.104/ATG/backend/data_creation';
 
   useEffect(() => {
     fetchVenues();

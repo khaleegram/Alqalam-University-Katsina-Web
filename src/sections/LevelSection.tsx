@@ -1,3 +1,5 @@
+// File: LevelsSection.tsx
+
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
@@ -5,7 +7,7 @@ interface Program {
   id: number;
   name: string;
   department_id: number;
-  department_name: number;
+  department_name: string;
 }
 
 interface Level {
@@ -16,18 +18,14 @@ interface Level {
   program_name: string;
 }
 
-interface AcademicSession {
+interface Session {
   session_id: number;
-  start_year: number;
-  end_year: number;
   session_name: string;
 }
 
 interface Semester {
   semester_id: number;
-  session_id: number;
   semester_number: number;
-  start_date: string;
   status: string;
 }
 
@@ -49,237 +47,208 @@ interface ModalActionsProps {
   submitLabel: string;
 }
 
+const BASE_URL = 'http://192.168.1.104/ATG/backend/data_creation/academic_api.php';
+
+
 const LevelsSection: React.FC = () => {
-  // States for programs and levels
+  // programs & levels
   const [programs, setPrograms] = useState<Program[]>([]);
   const [levels, setLevels] = useState<Level[]>([]);
 
-  // ─── NEW: sessions, semesters & snapshot ───────────────────────────────
-  const [academicSessions, setAcademicSessions] = useState<AcademicSession[]>([]);
-  const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
+  // versioned sessions & semesters
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [activeSession, setActiveSession] = useState<number | null>(null);
   const [semesters, setSemesters] = useState<Semester[]>([]);
-  const [selectedSemesterId, setSelectedSemesterId] = useState<number | null>(null);
+  const [activeSemester, setActiveSemester] = useState<number | null>(null);
+
+  // snapshot vs live
   const [snapshotLevels, setSnapshotLevels] = useState<Level[]>([]);
 
-  // Search input for filtering by program name
-  const [programSearch, setProgramSearch] = useState<string>('');
-
-  // Message and modal visibility states
+  // UI state
+  const [programSearch, setProgramSearch] = useState('');
   const [message, setMessage] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
 
-  // State variables for adding a new level
+  // add/edit form state
   const [newProgramId, setNewProgramId] = useState('');
   const [newProgramSearch, setNewProgramSearch] = useState('');
   const [newLevel, setNewLevel] = useState('');
   const [newStudentsCount, setNewStudentsCount] = useState('');
 
-  // State variables for editing a level
   const [editId, setEditId] = useState<number | null>(null);
   const [editProgramId, setEditProgramId] = useState('');
   const [editProgramSearch, setEditProgramSearch] = useState('');
   const [editLevel, setEditLevel] = useState('');
   const [editStudentsCount, setEditStudentsCount] = useState('');
 
-  // Base URL for the PHP backend
-  const baseUrl = 'http://192.168.94.83/ATG/backend/data_creation';
-
-  // ─── On mount: fetch sessions, programs & levels ────────────────────────
+  // initial load
   useEffect(() => {
-    fetchAcademicSessions();
+    fetchSessions();
     fetchPrograms();
     fetchAllLevels();
   }, []);
 
-  // ─── Fetch academic sessions ────────────────────────────────────────────
-  const fetchAcademicSessions = async () => {
-    try {
-      const res = await axios.get(`${baseUrl}/academic_sessions.php`);
-      if (res.data.status === 'success') {
-        const sessions: AcademicSession[] = res.data.data;
-        setAcademicSessions(sessions);
-        // default to latest session
-        if (sessions.length) {
-          setSelectedSessionId(sessions[sessions.length - 1].session_id);
-        }
-      } else {
-        setMessage(res.data.message || 'Error fetching sessions');
-      }
-    } catch (err) {
-      console.error('Error fetching sessions:', err);
-      setMessage('Error fetching sessions');
+  // fetch academic sessions
+// fetch academic sessions
+const fetchSessions = async () => {
+  try {
+    const { data } = await axios.get(`${BASE_URL}?action=get_sessions`);
+    setSessions(data.data);
+    if (data.data.length) {
+      setActiveSession(data.data[0].session_id);
     }
-  };
+  } catch {
+    setMessage('Error loading sessions');
+  }
+};
 
-  // ─── When session changes, fetch semesters ─────────────────────────────
+
+  // fetch semesters when session changes
   useEffect(() => {
-    if (selectedSessionId !== null) {
-      fetchSemesters(selectedSessionId);
-    } else {
+    if (!activeSession) {
       setSemesters([]);
+      setActiveSemester(null);
+      return;
     }
-  }, [selectedSessionId]);
-
-  const fetchSemesters = async (sessionId: number) => {
-    try {
-      const res = await axios.get(`${baseUrl}/semesters.php?session_id=${sessionId}`);
-      if (res.data.status === 'success') {
-        const sems: Semester[] = res.data.data;
-        setSemesters(sems);
-        // default to open or first semester
-        if (sems.length) {
-          const openOne = sems.find(s => s.status === 'open') || sems[0];
-          setSelectedSemesterId(openOne.semester_id);
+    axios
+      .get(`${BASE_URL}?action=get_semesters&session_id=${activeSession}`)
+      .then(({ data }) => {
+        if (data.status === 'success') {
+          setSemesters(data.data);
+          const openSem = data.data.find((s: Semester) => s.status === 'open') || data.data[0];
+          setActiveSemester(openSem?.semester_id || null);
         }
-      } else {
-        setMessage(res.data.message || 'Error fetching semesters');
-      }
-    } catch (err) {
-      console.error('Error fetching semesters:', err);
-      setMessage('Error fetching semesters');
-    }
-  };
+      })
+      .catch(() => {
+        setSemesters([]);
+        setActiveSemester(null);
+      });
+  }, [activeSession]);
+  
 
-  // ─── When both selected, fetch snapshot ────────────────────────────────
+  // fetch snapshot whenever session+semester change
   useEffect(() => {
-    if (selectedSessionId && selectedSemesterId) {
-      fetchSnapshot(selectedSessionId, selectedSemesterId);
+    if (activeSession && activeSemester) {
+      axios
+        .get(
+          `${BASE_URL}?action=get_level_history&session_id=${activeSession}&semester_id=${activeSemester}`
+        )
+        .then(({ data }) => {
+          setSnapshotLevels(data.status === 'success' ? data.data : []);
+        })
+        .catch(() => {
+          setSnapshotLevels([]);
+        });
     } else {
       setSnapshotLevels([]);
     }
-  }, [selectedSessionId, selectedSemesterId]);
+  }, [activeSession, activeSemester]);
+  
 
-  const fetchSnapshot = async (sessionId: number, semesterId: number) => {
-    try {
-      const res = await axios.get(
-        `${baseUrl}/level_counts_history.php?session_id=${sessionId}&semester_id=${semesterId}`
-      );
-      if (res.data.status === 'success') {
-        setSnapshotLevels(res.data.data);
-      } else {
-        setSnapshotLevels([]); // no history → show live
-      }
-    } catch (err) {
-      console.error('Error fetching snapshot:', err);
-      setSnapshotLevels([]);
-    }
-  };
-
-  // ─── Fetch programs & levels (unchanged) ───────────────────────────────
+  // fetch programs & levels
   const fetchPrograms = async () => {
     try {
-      const res = await axios.get(`${baseUrl}/programs.php`);
-      if (res.data.status === 'success') {
-        setPrograms(res.data.data || []);
-      } else {
-        setMessage(res.data.message || 'Error fetching programs');
-      }
-    } catch (err) {
-      console.error('Error fetching programs:', err);
+      const { data } = await axios.get(`${BASE_URL}/programs.php`);
+      setPrograms(data.data);
+    } catch {
       setMessage('Error fetching programs');
     }
   };
-
   const fetchAllLevels = async () => {
     try {
-      const res = await axios.get(`${baseUrl}/levels.php`);
-      if (res.data.status === 'success') {
-        setLevels(res.data.data);
-      } else {
-        setMessage(res.data.message || 'Error fetching levels');
-      }
-    } catch (err) {
-      console.error('Error fetching levels:', err);
+      const { data } = await axios.get(`${BASE_URL}/levels.php`);
+      setLevels(data.data);
+    } catch {
       setMessage('Error fetching levels');
     }
   };
 
-  // ─── Add/Edit/Delete handlers (unchanged) ───────────────────────────────
-  const handleAddProgramSelect = (prog: Program) => {
-    setNewProgramSearch(prog.name);
-    setNewProgramId(prog.id.toString());
+  // handle add/edit selection
+  const handleAddProgramSelect = (p: Program) => {
+    setNewProgramSearch(p.name);
+    setNewProgramId(p.id.toString());
   };
-
-  const handleEditProgramSelect = (prog: Program) => {
-    setEditProgramSearch(prog.name);
-    setEditProgramId(prog.id.toString());
+  const handleEditProgramSelect = (p: Program) => {
+    setEditProgramSearch(p.name);
+    setEditProgramId(p.id.toString());
   };
-
   const resetMessages = () => setMessage('');
 
+  // add level
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newProgramId || !newLevel || !newStudentsCount || parseInt(newStudentsCount) <= 0) {
+    if (!newProgramId || !newLevel || !newStudentsCount || +newStudentsCount <= 0) {
       setMessage('All fields are required and must be valid.');
       return;
     }
-    const programId = parseInt(newProgramId);
-    const levelNumber = parseInt(newLevel);
-    const existing = levels.find(l => l.program_id === programId && l.level === levelNumber);
-    if (existing) {
-      setMessage('This level already exists in the selected program.');
+    const exists = levels.some(
+      l => l.program_id === +newProgramId && l.level === +newLevel
+    );
+    if (exists) {
+      setMessage('This level already exists.');
       setShowAddModal(false);
       return;
     }
     try {
-      const res = await axios.post(`${baseUrl}/levels.php`, {
-        program_id: programId,
-        level: levelNumber,
-        students_count: parseInt(newStudentsCount),
+      const { data } = await axios.post(`${BASE_URL}/levels.php`, {
+        program_id: +newProgramId,
+        level: +newLevel,
+        students_count: +newStudentsCount,
       });
-      if (res.data.status === 'success') {
+      if (data.status === 'success') {
         setMessage('Level added successfully');
         setShowAddModal(false);
-        setNewProgramId('');
-        setNewProgramSearch('');
-        setNewLevel('');
-        setNewStudentsCount('');
         fetchAllLevels();
       } else {
-        setMessage(res.data.message || 'Error adding level');
+        setMessage(data.message);
       }
-    } catch (err) {
-      console.error('Error adding level:', err);
+    } catch {
       setMessage('Error adding level');
     }
   };
 
+  // edit level
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editId || !editProgramId || !editLevel || !editStudentsCount || parseInt(editStudentsCount) <= 0) {
+    if (
+      editId === null ||
+      !editProgramId ||
+      !editLevel ||
+      !editStudentsCount ||
+      +editStudentsCount <= 0
+    ) {
       setMessage('All fields are required and must be valid.');
       return;
     }
     try {
-      await axios.put(`${baseUrl}/levels.php`, {
+      await axios.put(`${BASE_URL}/levels.php`, {
         id: editId,
-        program_id: parseInt(editProgramId),
-        level: parseInt(editLevel),
-        students_count: parseInt(editStudentsCount),
+        program_id: +editProgramId,
+        level: +editLevel,
+        students_count: +editStudentsCount,
       });
       setMessage('Level updated successfully');
       setShowEditModal(false);
-      setEditId(null);
       fetchAllLevels();
-    } catch (err) {
-      console.error('Error updating level:', err);
+    } catch {
       setMessage('Error updating level');
     }
   };
 
+  // delete level
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this level?')) return;
+    if (!window.confirm('Are you sure you want to delete this level?')) return;
     try {
-      await axios.delete(`${baseUrl}/levels.php`, { data: { id } });
+      await axios.delete(`${BASE_URL}/levels.php`, { data: { id } });
       setMessage('Level deleted successfully');
       fetchAllLevels();
-    } catch (err) {
-      console.error('Error deleting level:', err);
+    } catch {
       setMessage('Error deleting level');
     }
   };
 
+  // open edit modal
   const openEditModal = (lvl: Level) => {
     setEditId(lvl.id);
     setEditProgramId(lvl.program_id.toString());
@@ -287,43 +256,40 @@ const LevelsSection: React.FC = () => {
     setEditLevel(lvl.level.toString());
     setEditStudentsCount(lvl.students_count.toString());
     setShowEditModal(true);
-    setMessage('');
+    resetMessages();
   };
 
-  // ─── Decide data source: snapshot or live ──────────────────────────────
+  // choose data source
   const displayedLevels = snapshotLevels.length ? snapshotLevels : levels;
 
-  // ─── Grouping & filtering (unchanged) ─────────────────────────────────
-  const groupedLevels = displayedLevels.reduce(
-    (acc: Record<string, Level[]>, lvl) => {
-      if (!acc[lvl.program_name]) acc[lvl.program_name] = [];
-      acc[lvl.program_name].push(lvl);
-      return acc;
-    },
-    {}
+  // group & filter
+  const grouped = displayedLevels.reduce<Record<string, Level[]>>((acc, l) => {
+    acc[l.program_name] = acc[l.program_name] || [];
+    acc[l.program_name].push(l);
+    return acc;
+  }, {});
+  const filtered = Object.entries(grouped).filter(([name]) =>
+    programSearch.trim()
+      ? name.toLowerCase().includes(programSearch.toLowerCase())
+      : true
   );
-
-  const filteredGroups = Object.entries(groupedLevels).filter(([name]) => {
-    if (!programSearch.trim()) return true;
-    return name.toLowerCase().includes(programSearch.toLowerCase());
-  });
 
   return (
     <section className="bg-cream dark:bg-gray-900 p-6 rounded-lg shadow-lg max-w-4xl mx-auto">
-      {/* ─── Session + Semester selects ──────────────────────────────── */}
+      {/* Session & Semester */}
       <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-6">
         <div className="flex flex-col">
           <label className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
             Academic Session
           </label>
           <select
-            value={selectedSessionId || ''}
-            onChange={e => setSelectedSessionId(parseInt(e.target.value))}
-            className="p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-maroon focus:border-maroon dark:bg-gray-700 dark:text-white"
+            value={activeSession ?? ''}
+            onChange={e => setActiveSession(+e.target.value)}
+            className="p-2 border rounded"
           >
-            {academicSessions.map(sess => (
-              <option key={sess.session_id} value={sess.session_id}>
-                {sess.session_name}
+            {sessions.map(s => (
+              <option key={s.session_id} value={s.session_id}>
+                {s.session_name}
               </option>
             ))}
           </select>
@@ -333,20 +299,26 @@ const LevelsSection: React.FC = () => {
             Semester
           </label>
           <select
-            value={selectedSemesterId || ''}
-            onChange={e => setSelectedSemesterId(parseInt(e.target.value))}
-            className="p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-maroon focus:border-maroon dark:bg-gray-700 dark:text-white"
+            value={activeSemester ?? ''}
+            onChange={e => setActiveSemester(+e.target.value)}
+            disabled={!semesters.length}
+            className="p-2 border rounded disabled:opacity-50"
           >
-            {semesters.map(sem => (
-              <option key={sem.semester_id} value={sem.semester_id}>
-                {sem.semester_number}
-              </option>
-            ))}
+            {semesters.length ? (
+              semesters.map(s => (
+                <option key={s.semester_id} value={s.semester_id}>
+                  Semester {s.semester_number}{' '}
+                  {s.status === 'open' ? '(open)' : ''}
+                </option>
+              ))
+            ) : (
+              <option>No semesters</option>
+            )}
           </select>
         </div>
       </div>
 
-      {/* ─── Existing search/add UI ────────────────────────────────────── */}
+      {/* Manage Levels */}
       <div className="flex flex-col sm:flex-row sm:justify-between items-center mb-4">
         <h3 className="text-2xl font-semibold text-maroon mb-2 sm:mb-0">
           Manage Levels
@@ -357,20 +329,27 @@ const LevelsSection: React.FC = () => {
             placeholder="Search Program"
             value={programSearch}
             onChange={e => setProgramSearch(e.target.value)}
-            className="p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-maroon dark:bg-gray-700 dark:text-white"
+            className="p-2 border rounded"
           />
           <button
             onClick={() => {
               resetMessages();
               setShowAddModal(true);
             }}
-            className="px-4 py-2 bg-maroon text-white rounded hover:bg-maroon-dark transition-colors"
+            className="px-4 py-2 bg-maroon text-white rounded hover:bg-maroon-dark"
+            disabled={!!snapshotLevels.length}
+            title={
+              snapshotLevels.length
+                ? 'Cannot add while viewing a snapshot'
+                : 'Add Level'
+            }
           >
             Add Level
           </button>
         </div>
       </div>
 
+      {/* Message */}
       {message && (
         <div
           className={`mb-4 p-3 rounded ${
@@ -383,128 +362,220 @@ const LevelsSection: React.FC = () => {
         </div>
       )}
 
-      {/* ─── Render level tables (unchanged) ───────────────────────────── */}
-      {filteredGroups.length > 0 ? (
-        filteredGroups.map(([programName, lvlArray]) => (
-          <div key={programName} className="mb-8">
+      {/* Levels Table */}
+      {filtered.length ? (
+        filtered.map(([progName, arr]) => (
+          <div key={progName} className="mb-8">
             <h4 className="text-xl font-semibold text-maroon mb-2">
-              {programName}
+              {progName}
             </h4>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">No.</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Level</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Students Count</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      #
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Level
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Students Count
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-cream dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                  {lvlArray
+                  {arr
                     .sort((a, b) => a.level - b.level)
                     .map((lvl, idx) => (
                       <tr key={lvl.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{idx + 1}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{lvl.level}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{lvl.students_count}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {idx + 1}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {lvl.level}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {lvl.students_count}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex gap-2">
-                            <button onClick={() => openEditModal(lvl)} className="px-3 py-1 bg-maroon text-white rounded hover:bg-blue-700 transition-colors">Edit</button>
-                            <button onClick={() => handleDelete(lvl.id)} className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors">Delete</button>
+                            <button
+                              onClick={() => openEditModal(lvl)}
+                              className="px-3 py-1 bg-maroon text-white rounded hover:bg-maroon-dark"
+                              disabled={!!snapshotLevels.length}
+                              title={
+                                snapshotLevels.length
+                                  ? 'Cannot edit while viewing a snapshot'
+                                  : 'Edit'
+                              }
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(lvl.id)}
+                              className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                              disabled={!!snapshotLevels.length}
+                              title={
+                                snapshotLevels.length
+                                  ? 'Cannot delete while viewing a snapshot'
+                                  : 'Delete'
+                              }
+                            >
+                              Delete
+                            </button>
                           </div>
                         </td>
                       </tr>
                     ))}
-                  {lvlArray.length === 0 && (
-                    <tr>
-                      <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">No levels found</td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
             </div>
           </div>
         ))
       ) : (
-        <div className="text-center text-gray-500 dark:text-gray-400">No programs found.</div>
+        <div className="text-center text-gray-500 dark:text-gray-400">
+          {snapshotLevels.length
+            ? 'No data in this snapshot.'
+            : 'No levels found.'}
+        </div>
       )}
 
-      {/* ─── Add/Edit Modals (unchanged) ──────────────────────────────────── */}
+      {/* Add Modal */}
       {showAddModal && (
         <Modal title="Add Level" onClose={() => setShowAddModal(false)}>
           <form onSubmit={handleAddSubmit} className="space-y-4">
             <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Program:</label>
+              <label className="block mb-2 text-sm font-medium">
+                Program
+              </label>
               <input
                 type="text"
                 placeholder="Search Program"
                 value={newProgramSearch}
-                onChange={e => { setNewProgramSearch(e.target.value); setNewProgramId(''); }}
-                required
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-maroon focus:border-maroon dark:bg-gray-700 dark:text-white"
+                onChange={e => {
+                  setNewProgramSearch(e.target.value);
+                  setNewProgramId('');
+                }}
+                className="w-full p-2 border rounded"
               />
               {newProgramSearch && (
-                <ul className="border border-gray-300 dark:border-gray-600 mt-1 max-h-40 overflow-auto rounded-md bg-white dark:bg-gray-800">
-                  {programs.filter(p => p.name.toLowerCase().includes(newProgramSearch.toLowerCase())).map(p => (
-                    <li key={p.id} onClick={() => handleAddProgramSelect(p)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer">{p.name}</li>
-                  ))}
+                <ul className="border rounded max-h-40 overflow-auto">
+                  {programs
+                    .filter(p =>
+                      p.name
+                        .toLowerCase()
+                        .includes(newProgramSearch.toLowerCase())
+                    )
+                    .map(p => (
+                      <li
+                        key={p.id}
+                        onClick={() => handleAddProgramSelect(p)}
+                        className="p-2 hover:bg-gray-200 cursor-pointer"
+                      >
+                        {p.name}
+                      </li>
+                    ))}
                 </ul>
               )}
             </div>
             <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Level:</label>
+              <label className="block mb-2 text-sm font-medium">Level</label>
               <select
                 value={newLevel}
                 onChange={e => setNewLevel(e.target.value)}
                 required
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-maroon focus:border-maroon dark:bg-gray-700 dark:text-white"
+                className="w-full p-2 border rounded"
               >
                 <option value="">-- Select Level --</option>
-                {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
+                {[1, 2, 3, 4, 5].map(n => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
               </select>
             </div>
-            <InputField label="Students Count" value={newStudentsCount} setValue={setNewStudentsCount} type="number" />
-            <ModalActions onCancel={() => setShowAddModal(false)} submitLabel="Add" />
+            <InputField
+              label="Students Count"
+              value={newStudentsCount}
+              setValue={setNewStudentsCount}
+              type="number"
+            />
+            <ModalActions
+              onCancel={() => setShowAddModal(false)}
+              submitLabel="Add"
+            />
           </form>
         </Modal>
       )}
 
+      {/* Edit Modal */}
       {showEditModal && (
         <Modal title="Edit Level" onClose={() => setShowEditModal(false)}>
           <form onSubmit={handleEditSubmit} className="space-y-4">
             <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Program:</label>
+              <label className="block mb-2 text-sm font-medium">
+                Program
+              </label>
               <input
                 type="text"
                 placeholder="Search Program"
                 value={editProgramSearch}
-                onChange={e => { setEditProgramSearch(e.target.value); setEditProgramId(''); }}
-                required
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-maroon focus:border-maroon dark:bg-gray-700 dark:text-white"
+                onChange={e => {
+                  setEditProgramSearch(e.target.value);
+                  setEditProgramId('');
+                }}
+                className="w-full p-2 border rounded"
               />
               {editProgramSearch && (
-                <ul className="border border-gray-300 dark:border-gray-600 mt-1 max-h-40 overflow-auto rounded-md bg-white dark:bg-gray-800">
-                  {programs.filter(p => p.name.toLowerCase().includes(editProgramSearch.toLowerCase())).map(p => (
-                    <li key={p.id} onClick={() => handleEditProgramSelect(p)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer">{p.name}</li>
-                  ))}
+                <ul className="border rounded max-h-40 overflow-auto">
+                  {programs
+                    .filter(p =>
+                      p.name
+                        .toLowerCase()
+                        .includes(editProgramSearch.toLowerCase())
+                    )
+                    .map(p => (
+                      <li
+                        key={p.id}
+                        onClick={() => handleEditProgramSelect(p)}
+                        className="p-2 hover:bg-gray-200 cursor-pointer"
+                      >
+                        {p.name}
+                      </li>
+                    ))}
                 </ul>
               )}
             </div>
             <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Level:</label>
+              <label className="block mb-2 text-sm font-medium">Level</label>
               <select
                 value={editLevel}
                 onChange={e => setEditLevel(e.target.value)}
                 required
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-maroon focus:border-maroon dark:bg-gray-700 dark:text-white"
+                className="w-full p-2 border rounded"
               >
                 <option value="">-- Select Level --</option>
-                {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
+                {[1, 2, 3, 4, 5].map(n => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
               </select>
             </div>
-            <InputField label="Students Count" value={editStudentsCount} setValue={setEditStudentsCount} type="number" />
-            <ModalActions onCancel={() => setShowEditModal(false)} submitLabel="Update" />
+            <InputField
+              label="Students Count"
+              value={editStudentsCount}
+              setValue={setEditStudentsCount}
+              type="number"
+            />
+            <ModalActions
+              onCancel={() => setShowEditModal(false)}
+              submitLabel="Update"
+            />
           </form>
         </Modal>
       )}
@@ -512,14 +583,13 @@ const LevelsSection: React.FC = () => {
   );
 };
 
-// Reusable Modal Component
 const Modal: React.FC<ModalProps> = ({ title, onClose, children }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div className="bg-cream dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-lg">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-maroon">{title}</h2>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300" aria-label="Close">
-          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <button onClick={onClose} aria-label="Close">
+          <svg className="h-6 w-6 text-gray-400 hover:text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
@@ -529,15 +599,15 @@ const Modal: React.FC<ModalProps> = ({ title, onClose, children }) => (
   </div>
 );
 
-const InputField: React.FC<InputFieldProps> = ({ label, value, setValue, type = "text" }) => (
+const InputField: React.FC<InputFieldProps> = ({ label, value, setValue, type = 'text' }) => (
   <div>
-    <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">{label}:</label>
+    <label className="block mb-2 text-sm font-medium">{label}:</label>
     <input
       type={type}
       value={value}
       onChange={e => setValue(e.target.value)}
       required
-      className="w-full p-2 border border-maroon rounded-md shadow-sm focus:ring-maroon focus:border-maroon dark:bg-gray-700 dark:text-white"
+      className="w-full p-2 border rounded"
     />
   </div>
 );
@@ -547,14 +617,11 @@ const ModalActions: React.FC<ModalActionsProps> = ({ onCancel, submitLabel }) =>
     <button
       onClick={onCancel}
       type="button"
-      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-cream dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-maroon"
+      className="px-4 py-2 border rounded"
     >
       Cancel
     </button>
-    <button
-      type="submit"
-      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-maroon hover:bg-maroon-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-maroon"
-    >
+    <button type="submit" className="px-4 py-2 bg-maroon text-white rounded">
       {submitLabel}
     </button>
   </div>
